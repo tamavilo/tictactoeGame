@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tic Tac Toe vs AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        h5 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        h1 {
+            margin-top: 12px;
+        }
+
+        #scoreboard {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            color: #222;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .cell {
+            background: #fff;
+            border: 2px solid #ddd;
+            font-size: 2.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .cell:hover {
+            background: #c9f5da;
+        }
+
+        .cell.x {
+            background: #4287f5 !important;
+            color: white;
+        }
+
+        .cell.o {
+            background: #f08080 !important;
+            color: white;
+        }
+
+        .cell.winner {
+            background-color: #4ce689 !important;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #444;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .kamu {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .lawan {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background: #f08080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        @media (max-width: 500px) {
+            .board {
+                grid-template-columns: repeat(3, 80px);
+                grid-template-rows: repeat(3, 80px);
+                gap: 8px;
+            }
+
+            .cell {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <h1>Tic Tac Toe Game</h1>
+        <h5>By @iwan.alfr</h5>
+
+        <div id="scoreboard">
+            <span class="kamu"> Kamu : <span id="scoreX">0</span></span>
+            |
+            <span class="lawan"> Komputer : <span id="scoreO">0</span></span>
+        </div>
+
+        <div class="board" id="board"></div>
+        <div id="status"></div>
+        <button onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <script>
+        const board = document.getElementById("board");
+        const status = document.getElementById("status");
+        let currentPlayer = "X"; // Player selalu X
+        let cells = Array(9).fill(null);
+        let gameActive = true;
+        let scoreX = 0;
+        let scoreO = 0;
+
+        function createBoard() {
+            board.innerHTML = "";
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.dataset.index = i;
+                cell.addEventListener("click", handleClick);
+                board.appendChild(cell);
+            }
+            status.textContent = "Giliran Kamu";
+        }
+
+        function handleClick(e) {
+            const index = e.target.dataset.index;
+            if (!gameActive || cells[index] || currentPlayer !== "X") return; // Player hanya boleh main saat giliran X
+
+            makeMove(index, currentPlayer);
+
+            if (gameActive && currentPlayer === "O") {
+                // Giliran komputer
+                setTimeout(aiMove, 500);
+            }
+        }
+
+        function makeMove(index, player) {
+            cells[index] = player;
+            const cell = board.children[index];
+            cell.textContent = player;
+            cell.classList.add(player.toLowerCase());
+
+            const winningPattern = checkWinner();
+            if (winningPattern) {
+                gameActive = false;
+                highlightWinningCells(winningPattern);
+                updateScore(player);
+                showEndPopup(`${player === "X" ? "Kamu" : "Komputer"} menang!`);
+                return;
+            }
+
+            if (cells.every(cell => cell)) {
+                gameActive = false;
+                showEndPopup("Permainan seri!");
+                return;
+            }
+
+            currentPlayer = player === "X" ? "O" : "X";
+            status.textContent = `Giliran ${currentPlayer === "X" ? "Kamu" : "Komputer"}`;
+        }
+
+        function aiMove() {
+            if (!gameActive) return;
+            const emptyIndices = cells.map((v, i) => v === null ? i : null).filter(v => v !== null);
+            if (emptyIndices.length === 0) return;
+
+            const choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            makeMove(choice, "O");
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return winPatterns.find(pattern => {
+                const [a, b, c] = pattern;
+                return cells[a] && cells[a] === cells[b] && cells[a] === cells[c];
+            });
+        }
+
+        function highlightWinningCells(pattern) {
+            pattern.forEach(index => {
+                board.children[index].classList.add("winner");
+            });
+        }
+
+        function updateScore(player) {
+            if (player === "X") {
+                scoreX++;
+                document.getElementById("scoreX").textContent = scoreX;
+            } else if (player === "O") {
+                scoreO++;
+                document.getElementById("scoreO").textContent = scoreO;
+            }
+        }
+
+        function showEndPopup(message) {
+            Swal.fire({
+                title: message,
+                html: `Skor sekarang:<br><div class="kamu"> Kamu : <b>${scoreX}</b></div><br><div class="lawan">Komputer : <b>${scoreO}</b></div>`,
+                icon: message.includes("menang") ? 'success' : 'info',
+                confirmButtonText: 'Main lagi',
+                allowOutsideClick: false
+            }).then(() => resetBoard());
+        }
+
+        function resetBoard() {
+                cells = Array(9).fill(null);
+                currentPlayer = "X";
+                gameActive = true;
+                status.textContent = `Giliran Player ${currentPlayer}`;
+                board.innerHTML = "";
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.index = i;
+                    cell.addEventListener("click", handleClick);
+                    board.appendChild(cell);
+                }
+            }
+
+
+        function resetGame() {
+            resetBoard();
+            scoreX = 0;
+            scoreO = 0;
+            document.getElementById("scoreX").textContent = scoreX;
+            document.getElementById("scoreO").textContent = scoreO;
+        }
+
+        createBoard();
+    </script>
+</body>
+
+</html>
